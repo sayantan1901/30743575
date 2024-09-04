@@ -7,6 +7,7 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 
+import main.java.Exceptions.DatabaseOperationException;
 import main.java.models.TicketHistory;
 
 public class TicketHistoryDAO {
@@ -17,7 +18,7 @@ public class TicketHistoryDAO {
     }
 
     // Method to create a new ticket history entry
-    public void createTicketHistory(TicketHistory ticketHistory) throws SQLException {
+    public void createTicketHistory(TicketHistory ticketHistory) throws SQLException, DatabaseOperationException {
         String query = "INSERT INTO tickethistory (ticket_id, update_date, update_description) VALUES (?, ?, ?)";
         try (PreparedStatement stmt = connection.prepareStatement(query)) {
             stmt.setInt(1, ticketHistory.getTicketId());
@@ -25,13 +26,12 @@ public class TicketHistoryDAO {
             stmt.setString(3, ticketHistory.getUpdateDescription());
             stmt.executeUpdate();
         } catch (SQLException e) {
-            System.err.println("Error while creating ticket history: " + e.getMessage());
-            throw e;
+            throw new DatabaseOperationException("Failed to create ticket history entry.", e);
         }
     }
 
     // Method to retrieve all ticket history entries by ticket ID
-    public List<TicketHistory> getTicketHistoryByTicketId(int ticketId) throws SQLException {
+    public List<TicketHistory> getTicketHistoryByTicketId(int ticketId) throws SQLException, DatabaseOperationException {
         String query = "SELECT * FROM tickethistory WHERE ticket_id = ?";
         List<TicketHistory> ticketHistories = new ArrayList<>();
         try (PreparedStatement stmt = connection.prepareStatement(query)) {
@@ -48,8 +48,7 @@ public class TicketHistoryDAO {
                 }
             }
         } catch (SQLException e) {
-            System.err.println("Error while retrieving ticket history: " + e.getMessage());
-            throw e;
+            throw new DatabaseOperationException("Failed to retrieve ticket history entries.", e);
         }
         return ticketHistories; // Return list of ticket histories
     }
