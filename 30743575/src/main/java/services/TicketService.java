@@ -7,6 +7,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.List;
 
+import main.java.Exceptions.DatabaseOperationException;
 import main.java.dao.AgentDAO;
 import main.java.dao.TicketDAO;
 import main.java.dao.TicketHistoryDAO;
@@ -25,12 +26,12 @@ public class TicketService {
         this.ticketHistoryDAO = ticketHistoryDAO;
     }
     // View agent details by agent ID
-    public Agent viewAgentDetails(int agentId) throws SQLException {
+    public Agent viewAgentDetails(int agentId) throws SQLException, DatabaseOperationException {
         return agentDAO.getAgentById(agentId);
     }
     
     // Update agent information, such as availability and skillset
-    public void updateAgentInformation(int agentId, String availability, String skillset) throws SQLException {
+    public void updateAgentInformation(int agentId, String availability, String skillset) throws SQLException, DatabaseOperationException {
         Agent agent = agentDAO.getAgentById(agentId);
         if (agent != null) {
             agent.setAvailability(availability.equalsIgnoreCase("available"));
@@ -39,14 +40,7 @@ public class TicketService {
         }
     }
 
-    // Save or update ticket history
-    /* public void updateTicketHistory(int ticket_id, String update_description) throws SQLException {
-        TicketHistory ticketHistory = ticketHistoryDAO.getTicketHistoryById(ticket_id);
-        if (ticketHistory != null) {
-            ticketHistory.setUpdateDescription(update_description);
-            ticketHistoryDAO.createTicketHistory(ticketHistory);
-        }   
-    } */
+    
    /*create ticket history */
     public int createTicketHistory(TicketHistory ticketHistory) throws SQLException {
         String query = "INSERT INTO tickethistory (ticket_id, update_date, update_description) VALUES (?, ?, ?)";
@@ -106,28 +100,37 @@ public class TicketService {
     
 
     // View ticket details by ticket ID
-    public Ticket viewTicketDetails(int ticket_id) throws SQLException {
-        return ticketDAO.getTicketById(ticket_id);
+    public Ticket viewTicketDetails(int ticketId) throws SQLException, DatabaseOperationException {
+        Ticket ticket = ticketDAO.getTicketById(ticketId);
+        if (ticket == null) {
+            throw new DatabaseOperationException("Ticket with ID " + ticketId + " not found.", null);
+        }
+        return ticket;
     }
+    
 
     // Update ticket status
-    public void updateTicketStatus(int ticket_id, String status) throws SQLException {
+    public void updateTicketStatus(int ticket_id, String status) throws SQLException, DatabaseOperationException {
         Ticket ticket = ticketDAO.getTicketById(ticket_id);
-        if (ticket != null) {
-            ticket.setStatus(status);
-            ticketDAO.updateTicket(ticket);
-            TicketHistory history = new TicketHistory(0, ticket_id, new java.sql.Timestamp(System.currentTimeMillis()), "Status updated to " + status);
-            ticketHistoryDAO.createTicketHistory(history);
+        if (ticket == null) {
+            throw new DatabaseOperationException("Ticket with ID " + ticket_id + " not found.", null);
         }
+        
+        ticket.setStatus(status);
+        ticketDAO.updateTicket(ticket);
+        
+        TicketHistory history = new TicketHistory(0, ticket_id, new java.sql.Timestamp(System.currentTimeMillis()), "Status updated to " + status);
+        ticketHistoryDAO.createTicketHistory(history);
     }
+    
 
     // Delete a ticket by ticket ID
-    public void deleteTicket(int ticket_id) throws SQLException {
+    public void deleteTicket(int ticket_id) throws SQLException, DatabaseOperationException {
         ticketDAO.deleteTicket(ticket_id);
     }
 
     // Assign a ticket to an agent
-    public void assignTicketToAgent(int ticket_id, int agentId) throws SQLException {
+    public void assignTicketToAgent(int ticket_id, int agentId) throws SQLException, DatabaseOperationException {
         Ticket ticket = ticketDAO.getTicketById(ticket_id);
         Agent agent = agentDAO.getAgentById(agentId);
         if (ticket != null && agent != null && agent.isAvailability()) {
@@ -141,7 +144,7 @@ public class TicketService {
     }
 
     // View ticket history by ticket ID
-    public List<TicketHistory> viewTicketHistory(int ticket_id) throws SQLException {
+    public List<TicketHistory> viewTicketHistory(int ticket_id) throws SQLException, DatabaseOperationException {
         return ticketHistoryDAO.getTicketHistoryByTicketId(ticket_id); 
     }
     
