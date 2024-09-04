@@ -1,5 +1,6 @@
 package main.java.dao;
 
+import main.java.Exceptions.DatabaseOperationException;
 import main.java.models.Ticket;
 import main.java.models.TicketHistory;
 
@@ -34,7 +35,7 @@ public class TicketDAO {
     }
 
     // Creates a new ticket and logs the creation in the ticket history
-    public void createTicket(Ticket ticket) throws SQLException {
+    public void createTicket(Ticket ticket) throws SQLException, DatabaseOperationException {
         // Check if the assigned agent ID is provided (not 0)
         Integer assignedAgentId = ticket.getAssignedAgentId() != 0 ? ticket.getAssignedAgentId() : null;
     
@@ -72,14 +73,13 @@ public class TicketDAO {
             history.setTicketId(ticket.getTicketId());
             history.setUpdateDescription("Ticket created.");
             ticketHistoryDAO.createTicketHistory(history);
-        } catch (SQLException e) {
-            System.err.println("Error while creating ticket: " + e.getMessage());
-            throw e;
+        }  catch (SQLException e) {
+            throw new DatabaseOperationException("Failed to create ticket.", e);
         }
     }
     
     // Retrieves a ticket by its ID
-    public Ticket getTicketById(int ticketId) throws SQLException {
+    public Ticket getTicketById(int ticketId) throws SQLException, DatabaseOperationException {
         String query = "SELECT * FROM tickets WHERE ticket_id = ?";
         try (PreparedStatement stmt = connection.prepareStatement(query)) {
             stmt.setInt(1, ticketId);
@@ -95,15 +95,14 @@ public class TicketDAO {
                     );
                 }
             }
-        } catch (SQLException e) {
-            System.err.println("Error while retrieving ticket: " + e.getMessage());
-            throw e;
+        }  catch (SQLException e) {
+            throw new DatabaseOperationException("Failed to retrieve ticket by ID.", e);
         }
         return null;  // Return null if the ticket is not found
     }
 
     // Updates an existing ticket and logs the update in the ticket history
-    public void updateTicket(Ticket ticket) throws SQLException {
+    public void updateTicket(Ticket ticket) throws SQLException, DatabaseOperationException {
         // Validate assigned agent ID if it is set
         if (ticket.getAssignedAgentId() != 0 && !agentExists(ticket.getAssignedAgentId())) {
             throw new SQLException("Assigned agent ID does not exist.");
@@ -126,20 +125,18 @@ public class TicketDAO {
             history.setUpdateDescription("Ticket updated.");
             ticketHistoryDAO.createTicketHistory(history);
         } catch (SQLException e) {
-            System.err.println("Error while updating ticket: " + e.getMessage());
-            throw e;
+            throw new DatabaseOperationException("Failed to update ticket.", e);
         }
     }
 
     // Deletes a ticket by its ID
-    public void deleteTicket(int ticketId) throws SQLException {
+    public void deleteTicket(int ticketId) throws SQLException, DatabaseOperationException {
         String query = "DELETE FROM tickets WHERE ticket_id = ?";
         try (PreparedStatement stmt = connection.prepareStatement(query)) {
             stmt.setInt(1, ticketId);
             stmt.executeUpdate();
         } catch (SQLException e) {
-            System.err.println("Error while deleting ticket: " + e.getMessage());
-            throw e;
+            throw new DatabaseOperationException("Failed to delete ticket.", e);
         }
     }
 }
